@@ -1,0 +1,1242 @@
+```html
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Our Love Story • Digital Love Card</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Romantic English Serif/Script + Clean Myanmar Unicode Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Myanmar:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '"Noto Sans Myanmar"', 'sans-serif'],
+            serif: ['"Playfair Display"', '"Noto Sans Myanmar"', 'serif'],
+            script: ['"Great Vibes"', '"Noto Sans Myanmar"', 'cursive'],
+          },
+          colors: {
+            roseGold: '#d48c94',
+            blush: '#fff5f7',
+            deepWine: '#591c2b',
+            warmCream: '#fdfbf7',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Romantic Scrollbar & Ambient Background */
+    body {
+      background: radial-gradient(circle at 15% 15%, #ffe4e9 0%, #fdf6f0 45%, #fce7f3 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: #3f1d28;
+    }
+
+    /* Glassmorphism Card Effect */
+    .love-glass {
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 20px 50px -12px rgba(159, 18, 57, 0.08);
+    }
+
+    /* Editable field visual indicator when in Edit Mode */
+    body.edit-mode-active [data-editable="true"] {
+      outline: 2px dashed rgba(225, 29, 72, 0.45);
+      outline-offset: 4px;
+      border-radius: 0.5rem;
+      background-color: rgba(255, 241, 242, 0.55);
+      transition: all 0.2s ease;
+      cursor: text;
+    }
+
+    body.edit-mode-active [data-editable="true"]:focus {
+      outline: 2px solid #e11d48;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.12);
+    }
+
+    /* Hide edit-only controls when in View Mode */
+    body:not(.edit-mode-active) .edit-only {
+      display: none !important;
+    }
+
+    /* Floating Petals / Hearts Canvas */
+    #ambient-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Postcard Lined Paper Pattern */
+    .postcard-lines {
+      background-image: repeating-linear-gradient(
+        transparent,
+        transparent 31px,
+        rgba(225, 29, 72, 0.15) 32px
+      );
+      line-height: 32px;
+    }
+
+    /* Subtle pulse animation for heart */
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      25% { transform: scale(1.14); }
+      45% { transform: scale(0.98); }
+      65% { transform: scale(1.1); }
+    }
+    .animate-heartbeat {
+      animation: heartbeat 2.2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-rose-200 selection:text-rose-900 pb-28">
+
+  <!-- Ambient Floating Petals Canvas -->
+  <canvas id="ambient-canvas"></canvas>
+
+  <!-- Sticky Top Control Bar (Edit Mode / Save / Backup) -->
+  <header class="sticky top-0 z-40 px-3 pt-3 sm:px-6">
+    <div class="max-w-5xl mx-auto love-glass rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+      <!-- Brand / Status -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white flex items-center justify-center shadow-md shadow-rose-200">
+          <i data-lucide="heart" class="w-4 h-4 fill-current animate-heartbeat"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-rose-950 leading-tight">Love Card Studio</h1>
+          <p id="mode-status-badge" class="text-[11px] font-medium text-rose-600">View Mode • ကြည့်ရှုနေသည်</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <!-- Toggle Edit / View Mode -->
+        <button id="toggle-mode-btn" type="button" onclick="toggleEditMode()"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-200 shadow-xs">
+          <i id="mode-icon" data-lucide="edit-3" class="w-4 h-4"></i>
+          <span id="mode-btn-text">ပြင်ဆင်မည် (Edit)</span>
+        </button>
+
+        <!-- Save Changes Button -->
+        <button type="button" onclick="saveAllData(true)"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white shadow-md shadow-rose-200 active:scale-95">
+          <i data-lucide="save" class="w-4 h-4"></i>
+          <span>သိမ်းဆည်းမည် (Save)</span>
+        </button>
+
+        <!-- More / Backup Dropdown Trigger -->
+        <div class="relative">
+          <button type="button" onclick="toggleBackupMenu()"
+            class="p-2 rounded-xl bg-white/80 hover:bg-white text-rose-800 border border-rose-100 transition"
+            title="Backup & Reset Options">
+            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div id="backup-menu" class="hidden absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-xl border border-rose-100 py-2 z-50 text-xs">
+            <button type="button" onclick="exportBackupJSON()" class="w-full px-4 py-2.5 text-left hover:bg-rose-50 flex items-center gap-2.5 text-slate-700 font-medium">
+              <i data-lucide="download" class="w-4 h-4 text-rose-600"></i>
+              <span>Export Backup (.json)</span>
+            </button>
+            <label class="w-full px-4 py-2.5 text-left hover:bg-rose-50 flex items-center gap-2.5 text-slate-700 font-medium cursor-pointer">
+              <i data-lucide="upload" class="w-4 h-4 text-rose-600"></i>
+              <span>Import Backup (.json)</span>
+              <input type="file" accept=".json" class="hidden" onchange="importBackupJSON(event)" />
+            </label>
+            <div class="my-1 border-t border-rose-100"></div>
+            <button type="button" onclick="openResetModal()" class="w-full px-4 py-2.5 text-left hover:bg-red-50 flex items-center gap-2.5 text-red-600 font-medium">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              <span>မူလအတိုင်းပြန်ထားမည် (Reset)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Helper Banner (Visible only in Edit Mode) -->
+    <div class="edit-only max-w-5xl mx-auto mt-2">
+      <div class="bg-amber-50/95 border border-amber-200 text-amber-900 rounded-xl px-4 py-2 text-xs flex items-center justify-between gap-2 shadow-xs">
+        <div class="flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-600 shrink-0"></i>
+          <span><strong>ပြင်ဆင်မှုစနစ် ဖွင့်ထားပါသည်:</strong> စာသားများပေါ်သို့ တိုက်ရိုက်နှိပ်၍ ပြင်ဆင်နိုင်ပြီး ပုံနှင့် ဗီဒီယိုများ ပြောင်းလဲပြီးပါက <strong>"သိမ်းဆည်းမည် (Save)"</strong> ကို နှိပ်ပါ။</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER: 5 Cohesive Romantic Sections -->
+  <main class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-6 space-y-10 sm:space-y-14">
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 1: HEADER & LIVE DATE & TIME COUNTER BOX                      -->
+    <!-- ===================================================================== -->
+    <section id="section-counter" class="love-glass rounded-3xl p-6 sm:p-10 text-center relative overflow-hidden">
+      <!-- Decorative Corner Florals -->
+      <div class="absolute -top-10 -left-10 w-36 h-36 bg-rose-200/40 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-pink-200/40 rounded-full blur-2xl pointer-events-none"></div>
+
+      <div class="relative z-10 max-w-2xl mx-auto">
+        <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-rose-100/80 text-rose-700 text-xs font-semibold tracking-wide uppercase mb-4">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span id="hero-badge" data-editable="true" data-key="heroBadge">Forever & Always • အချစ်ခရီးလမ်း</span>
+        </span>
+
+        <!-- Couple Names -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 my-2">
+          <h2 id="partner1-name" data-editable="true" data-key="partner1"
+            class="font-serif text-3xl sm:text-5xl font-bold text-rose-950 tracking-tight px-2 py-1">
+            Kyaw Swar
+          </h2>
+          <div class="w-11 h-11 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-500 shadow-inner shrink-0">
+            <i data-lucide="heart" class="w-5 h-5 fill-rose-500 animate-heartbeat"></i>
+          </div>
+          <h2 id="partner2-name" data-editable="true" data-key="partner2"
+            class="font-serif text-3xl sm:text-5xl font-bold text-rose-950 tracking-tight px-2 py-1">
+            Su Myat
+          </h2>
+        </div>
+
+        <!-- Romantic Subtitle -->
+        <p id="hero-subtitle" data-editable="true" data-key="heroSubtitle"
+          class="text-sm sm:text-base text-rose-800/80 max-w-xl mx-auto mt-3 leading-relaxed px-2 py-1">
+          မင်းနဲ့စတင်ဆုံတွေ့ခဲ့တဲ့နေ့ကစပြီး နေ့ရက်တိုင်းဟာ အလှပဆုံး အမှတ်တရတွေ ဖြစ်လာခဲ့တယ်...
+        </p>
+
+        <!-- Start Date Display & Editor -->
+        <div class="mt-5 inline-flex flex-col sm:flex-row items-center gap-2 bg-white/80 border border-rose-100 px-4 py-2 rounded-2xl shadow-xs">
+          <div class="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-rose-700">
+            <i data-lucide="calendar-heart" class="w-4 h-4 text-rose-500"></i>
+            <span>စတင်ချစ်ခဲ့သည့်နေ့ (Together Since):</span>
+            <strong id="formatted-start-date" class="text-rose-950">Nov 22, 2022 • 06:30 PM</strong>
+          </div>
+          <!-- Edit-only DateTime Input -->
+          <div class="edit-only mt-1 sm:mt-0 sm:ml-2">
+            <input id="start-date-input" type="datetime-local" onchange="updateStartDate(this.value)"
+              class="text-xs px-2.5 py-1.5 rounded-lg border border-rose-300 bg-rose-50 text-rose-900 focus:outline-none focus:ring-2 focus:ring-rose-500" />
+          </div>
+        </div>
+
+        <!-- Live Ticking Counter Grid -->
+        <div class="mt-7 grid grid-cols-3 sm:grid-cols-6 gap-2.5 sm:gap-3.5">
+          <div class="bg-white/90 rounded-2xl p-3 sm:p-4 border border-rose-100 shadow-xs">
+            <div id="cnt-years" class="font-serif text-2xl sm:text-3xl font-bold text-rose-600">0</div>
+            <div class="text-[11px] sm:text-xs font-medium text-rose-900/70 mt-1">နှစ် (Years)</div>
+          </div>
+          <div class="bg-white/90 rounded-2xl p-3 sm:p-4 border border-rose-100 shadow-xs">
+            <div id="cnt-months" class="font-serif text-2xl sm:text-3xl font-bold text-rose-600">0</div>
+            <div class="text-[11px] sm:text-xs font-medium text-rose-900/70 mt-1">လ (Months)</div>
+          </div>
+          <div class="bg-white/90 rounded-2xl p-3 sm:p-4 border border-rose-100 shadow-xs">
+            <div id="cnt-days" class="font-serif text-2xl sm:text-3xl font-bold text-rose-600">0</div>
+            <div class="text-[11px] sm:text-xs font-medium text-rose-900/70 mt-1">ရက် (Days)</div>
+          </div>
+          <div class="bg-white/90 rounded-2xl p-3 sm:p-4 border border-rose-100 shadow-xs">
+            <div id="cnt-hours" class="font-serif text-2xl sm:text-3xl font-bold text-pink-600">00</div>
+            <div class="text-[11px] sm:text-xs font-medium text-rose-900/70 mt-1">နာရီ (Hours)</div>
+          </div>
+          <div class="bg-white/90 rounded-2xl p-3 sm:p-4 border border-rose-100 shadow-xs">
+            <div id="cnt-minutes" class="font-serif text-2xl sm:text-3xl font-bold text-pink-600">00</div>
+            <div class="text-[11px] sm:text-xs font-medium text-rose-900/70 mt-1">မိနစ် (Mins)</div>
+          </div>
+          <div class="bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-2xl p-3 sm:p-4 shadow-md shadow-rose-200">
+            <div id="cnt-seconds" class="font-serif text-2xl sm:text-3xl font-bold">00</div>
+            <div class="text-[11px] sm:text-xs font-medium text-rose-100 mt-1">စက္ကန့် (Secs)</div>
+          </div>
+        </div>
+
+        <!-- Total Days Summary Pill -->
+        <p class="mt-4 text-xs font-medium text-rose-700/80">
+          စုစုပေါင်း အတူရှိခဲ့သော ရက်ပေါင်း <span id="total-days-badge" class="font-bold text-rose-700 underline decoration-rose-300">0</span> ရက်တိုင်တိုင် ချစ်ခင်ခဲ့ကြပါပြီ ♥
+        </p>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 2: PHOTO BOX SECTION (Editable Romantic Gallery)              -->
+    <!-- ===================================================================== -->
+    <section id="section-photos" class="love-glass rounded-3xl p-6 sm:p-9">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-rose-500 flex items-center gap-1.5">
+            <i data-lucide="camera" class="w-4 h-4"></i> Cherished Moments
+          </span>
+          <h3 id="photo-section-title" data-editable="true" data-key="photoSectionTitle"
+            class="font-serif text-2xl sm:text-3xl font-bold text-rose-950 mt-1">
+            အမှတ်တရ ဓာတ်ပုံများ (Our Photo Box)
+          </h3>
+        </div>
+
+        <!-- Add Photo Button (Edit Mode Only) -->
+        <div class="edit-only flex flex-wrap items-center gap-2">
+          <label class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold cursor-pointer shadow-sm transition">
+            <i data-lucide="image-plus" class="w-4 h-4"></i>
+            <span>ပုံအသစ်ထည့်မည် (Upload Photo)</span>
+            <input type="file" accept="image/*" multiple class="hidden" onchange="handleNewPhotoUpload(event)" />
+          </label>
+          <button type="button" onclick="addPhotoByUrlPrompt()"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold transition">
+            <i data-lucide="link" class="w-4 h-4"></i>
+            <span>URL ဖြင့်ထည့်မည်</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Photo Cards Grid -->
+      <div id="photo-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Dynamically rendered photo polaroid cards -->
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 3: POEM SECTION (Editable Romantic Verse & Theme)             -->
+    <!-- ===================================================================== -->
+    <section id="section-poem" class="rounded-3xl p-6 sm:p-10 relative overflow-hidden transition-all duration-300 love-glass">
+      <!-- Decorative Quote Mark -->
+      <div class="absolute top-4 right-6 font-serif text-8xl text-rose-300/30 select-none pointer-events-none">”</div>
+
+      <div class="max-w-2xl mx-auto text-center relative z-10">
+        <div class="flex items-center justify-center gap-2 mb-3">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100/80 text-rose-700 text-xs font-semibold">
+            <i data-lucide="feather" class="w-3.5 h-3.5"></i> Love Poem • ကဗျာလက်ဆောင်
+          </span>
+          <!-- Poem Font Style Switcher (Edit Mode) -->
+          <select id="poem-style-select" onchange="updatePoemStyle(this.value)"
+            class="edit-only text-xs rounded-full px-3 py-1 bg-white border border-rose-200 text-rose-800 focus:outline-none">
+            <option value="serif">Classic Serif (ဂန္ထဝင်စာလုံး)</option>
+            <option value="sans">Modern Clean (ရှင်းလင်းစာလုံး)</option>
+          </select>
+        </div>
+
+        <!-- Editable Poem Title -->
+        <h3 id="poem-title" data-editable="true" data-key="poemTitle"
+          class="font-serif text-2xl sm:text-3xl font-bold text-rose-950 mb-5 px-2 py-1">
+          “မင်းအတွက် ရေးဖွဲ့သော ကဗျာ”
+        </h3>
+
+        <!-- Editable Poem Body -->
+        <div id="poem-body" data-editable="true" data-key="poemBody"
+          class="font-serif text-base sm:text-lg text-rose-900/90 leading-loose whitespace-pre-line bg-white/60 rounded-2xl p-6 sm:p-8 border border-rose-100/80 shadow-inner">
+လမင်းကြီးက ညအမှောင်ကို အလင်းပေးသလို
+မင်းရဲ့အပြုံးလေးက ကိုယ့်ဘဝတစ်ခုလုံးကို လင်းလက်စေခဲ့တယ်...
+
+ရာသီတွေ ဘယ်လိုပဲ ပြောင်းလဲသွားပါစေ
+မင်းလက်ကို တွဲထားမယ့် ကိုယ့်ရဲ့အချစ်တွေကတော့
+ဘယ်တော့မှ ပြောင်းလဲသွားမှာ မဟုတ်ပါဘူး။
+        </div>
+
+        <!-- Editable Poem Author / Signature -->
+        <div class="mt-5 flex items-center justify-center gap-2 text-rose-700">
+          <span class="h-px w-8 bg-rose-300"></span>
+          <p id="poem-author" data-editable="true" data-key="poemAuthor"
+            class="font-serif italic text-sm sm:text-base font-semibold px-2 py-0.5">
+            မင်းကို အမြဲချစ်နေမယ့် သူ
+          </p>
+          <span class="h-px w-8 bg-rose-300"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 4: ANNIVERSARY POSTCARD SECTION                               -->
+    <!-- ===================================================================== -->
+    <section id="section-postcard" class="love-glass rounded-3xl p-5 sm:p-9">
+      <div class="mb-5 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-rose-500 flex items-center gap-1.5">
+            <i data-lucide="mail-heart" class="w-4 h-4"></i> Special Delivery
+          </span>
+          <h3 class="font-serif text-2xl sm:text-3xl font-bold text-rose-950 mt-1">
+            နှစ်ပတ်လည် ပို့စကတ် (Anniversary Postcard)
+          </h3>
+        </div>
+        <span class="text-xs text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100 font-medium">
+          ♥ Handwritten Memories
+        </span>
+      </div>
+
+      <!-- Vintage-Modern Split Postcard Container -->
+      <div class="bg-[#fffdf9] rounded-2xl border-2 border-rose-200/80 shadow-lg p-5 sm:p-8 relative overflow-hidden">
+        <!-- Decorative Air-mail Top/Bottom Border Strip -->
+        <div class="absolute top-0 left-0 right-0 h-2 bg-[repeating-linear-gradient(45deg,#f43f5e,#f43f5e_12px,#ffffff_12px,#ffffff_24px,#fda4af_24px,#fda4af_36px,#ffffff_36px,#ffffff_48px)] opacity-75"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 pt-2">
+          <!-- Left Side: Heartfelt Message on Lined Paper -->
+          <div class="lg:col-span-7 lg:border-r lg:border-dashed lg:border-rose-200 lg:pr-8 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span id="postcard-heading" data-editable="true" data-key="postcardHeading"
+                  class="font-serif italic text-xl sm:text-2xl font-bold text-rose-800">
+                  Happy Anniversary, My Love!
+                </span>
+              </div>
+
+              <div id="postcard-message" data-editable="true" data-key="postcardMessage"
+                class="postcard-lines min-h-[192px] text-sm sm:text-base text-rose-950/90 whitespace-pre-line px-1">
+ချစ်ရပါသော မင်းလေးရေ...
+ဒီနေ့ဟာ တို့နှစ်ယောက်အတွက် အရမ်းကို အဓိပ္ပာယ်ရှိတဲ့ နှစ်ပတ်လည်နေ့လေးပါ။ အတူတူဖြတ်သန်းခဲ့တဲ့ ပျော်ရွှင်မှုတွေ၊ ဂရုစိုက်မှုတွေအတွက် ကျေးဇူးအများကြီးတင်ပါတယ်။ နောင်နှစ်ပေါင်းများစွာတိုင်အောင် အတူတူ လက်တွဲသွားကြမယ်နော်။
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 flex items-center justify-between text-xs text-rose-600/80">
+              <span>Sent with infinite love ♥</span>
+              <span id="postcard-location" data-editable="true" data-key="postcardLocation" class="font-medium">
+                Yangon, Myanmar
+              </span>
+            </div>
+          </div>
+
+          <!-- Right Side: Stamp, Postmark, To / From / Date Fields -->
+          <div class="lg:col-span-5 flex flex-col justify-between space-y-6">
+            <!-- Top Row: Postmark & Stamp -->
+            <div class="flex items-start justify-between gap-3">
+              <!-- Circular Postmark -->
+              <div class="w-24 h-24 rounded-full border-2 border-rose-400/60 flex flex-col items-center justify-center text-center p-2 -rotate-12 text-rose-600/80 select-none">
+                <span class="text-[9px] font-bold uppercase tracking-widest">LOVE POST</span>
+                <span id="postmark-date" data-editable="true" data-key="postcardDate" class="text-[11px] font-bold my-0.5">
+                  22 NOV 2026
+                </span>
+                <span class="text-[8px] uppercase tracking-wider">FOREVER</span>
+              </div>
+
+              <!-- Postage Stamp Box -->
+              <div class="relative group">
+                <div class="w-24 h-28 bg-rose-50 p-1.5 border-2 border-dashed border-rose-300 rounded-md shadow-xs flex flex-col items-center justify-center overflow-hidden">
+                  <img id="postcard-stamp-img"
+                    src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80"
+                    onerror="this.src='https://placehold.co/200x240/ffe4e6/be123c?text=LOVE+STAMP'"
+                    alt="Love Stamp"
+                    class="w-full h-full object-cover rounded-xs" />
+                </div>
+                <!-- Change Stamp Button (Edit Mode Only) -->
+                <label class="edit-only absolute -bottom-2 -right-2 bg-rose-600 hover:bg-rose-700 text-white p-1.5 rounded-full shadow-md cursor-pointer transition" title="Change Stamp Image">
+                  <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                  <input type="file" accept="image/*" class="hidden" onchange="handleStampUpload(event)" />
+                </label>
+              </div>
+            </div>
+
+            <!-- Address Lines: To / From / Date -->
+            <div class="space-y-4 pt-2">
+              <div class="border-b border-rose-200 pb-1.5 flex items-baseline gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-rose-400 w-14 shrink-0">To:</span>
+                <span id="postcard-to" data-editable="true" data-key="postcardTo"
+                  class="text-sm sm:text-base font-serif font-semibold text-rose-950 flex-1">
+                  My Soulmate, Su Myat
+                </span>
+              </div>
+
+              <div class="border-b border-rose-200 pb-1.5 flex items-baseline gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-rose-400 w-14 shrink-0">From:</span>
+                <span id="postcard-from" data-editable="true" data-key="postcardFrom"
+                  class="text-sm sm:text-base font-serif font-semibold text-rose-950 flex-1">
+                  Yours Forever, Kyaw Swar
+                </span>
+              </div>
+
+              <div class="border-b border-rose-200 pb-1.5 flex items-baseline gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-rose-400 w-14 shrink-0">Note:</span>
+                <span id="postcard-tag" data-editable="true" data-key="postcardTag"
+                  class="text-xs sm:text-sm text-rose-700 italic flex-1">
+                  #OurAnniversary • အမြဲတမ်းအတူတူ
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 5: VIDEO BOX SECTION (Editable Video Memory Player)           -->
+    <!-- ===================================================================== -->
+    <section id="section-video" class="love-glass rounded-3xl p-6 sm:p-9">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-rose-500 flex items-center gap-1.5">
+            <i data-lucide="film" class="w-4 h-4"></i> Video Memory Box
+          </span>
+          <h3 id="video-title" data-editable="true" data-key="videoTitle"
+            class="font-serif text-2xl sm:text-3xl font-bold text-rose-950 mt-1">
+            အမှတ်တရ ဗီဒီယိုလေး (Our Special Video)
+          </h3>
+        </div>
+      </div>
+
+      <!-- Edit Video Controls (Visible only in Edit Mode) -->
+      <div class="edit-only mb-5 bg-rose-50/90 border border-rose-200 rounded-2xl p-4 space-y-3">
+        <p class="text-xs font-semibold text-rose-900 flex items-center gap-1.5">
+          <i data-lucide="video" class="w-4 h-4 text-rose-600"></i>
+          <span>YouTube Link (သို့) MP4 Video URL ထည့်သွင်းပါ (သို့မဟုတ်) ဖုန်း/စက်ထဲမှ ဗီဒီယိုဖိုင် ရွေးချယ်ပါ:</span>
+        </p>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input id="video-url-input" type="text" placeholder="https://www.youtube.com/watch?v=... သို့မဟုတ် .mp4 link"
+            class="flex-1 text-xs sm:text-sm px-3.5 py-2 rounded-xl border border-rose-200 bg-white text-rose-950 focus:outline-none focus:ring-2 focus:ring-rose-500" />
+          <button type="button" onclick="applyVideoUrl()"
+            class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition shrink-0">
+            ဗီဒီယိုပြောင်းမည် (Apply URL)
+          </button>
+          <label class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-semibold cursor-pointer transition shrink-0">
+            <i data-lucide="folder-open" class="w-4 h-4"></i>
+            <span>ဖိုင်ရွေးမည် (Local Video)</span>
+            <input type="file" accept="video/*" class="hidden" onchange="handleLocalVideoSelect(event)" />
+          </label>
+        </div>
+        <p class="text-[11px] text-rose-700/80">
+          * မှတ်ချက်: YouTube Link များကို Save လုပ်ထားပါက အမြဲတမ်းပြန်ကြည့်နိုင်ပါသည်။ Local Video ဖိုင်ကြီးများသည် လက်ရှိ Session အတွင်းသာ ပြသပေးနိုင်ပါမည်။
+        </p>
+      </div>
+
+      <!-- Responsive 16:9 Video Frame -->
+      <div class="rounded-2xl overflow-hidden bg-rose-950/5 border border-rose-200/80 shadow-inner aspect-video w-full relative">
+        <div id="video-player-container" class="w-full h-full flex items-center justify-center">
+          <!-- Rendered dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- Editable Video Memory Caption -->
+      <div class="mt-4 bg-white/70 rounded-2xl p-4 border border-rose-100 flex items-start gap-3">
+        <i data-lucide="quote" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5"></i>
+        <p id="video-note" data-editable="true" data-key="videoNote"
+          class="text-sm text-rose-900/90 leading-relaxed flex-1">
+          ဒီဗီဒီယိုလေးကို ပြန်ကြည့်တိုင်း မင်းနဲ့အတူရှိခဲ့တဲ့ ပျော်စရာအချိန်လေးတွေကို အမြဲသတိရနေမိတယ်...
+        </p>
+      </div>
+    </section>
+
+    <!-- Footer Signature -->
+    <footer class="text-center text-xs text-rose-800/60 pt-2 pb-6">
+      <p>Made with ♥ for our timeless love story • ပြင်ဆင်ထားသမျှကို <strong>Save</strong> ခလုတ်နှိပ်၍ သိမ်းဆည်းနိုင်ပါသည်</p>
+    </footer>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- CUSTOM MODALS & TOAST NOTIFICATIONS (No browser alert/confirm)        -->
+  <!-- ===================================================================== -->
+
+  <!-- Toast Notification Banner -->
+  <div id="toast-box" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 translate-y-4 transition-all duration-300">
+    <div class="bg-rose-950 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs sm:text-sm font-medium border border-rose-700/50">
+      <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+      <span id="toast-message">သိမ်းဆည်းပြီးပါပြီ! (Saved successfully)</span>
+    </div>
+  </div>
+
+  <!-- Add Photo via URL Modal -->
+  <div id="url-modal" class="hidden fixed inset-0 z-50 bg-rose-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-rose-100 space-y-4">
+      <div class="flex items-center justify-between">
+        <h4 class="font-serif text-lg font-bold text-rose-950">ဓာတ်ပုံ Link (URL) ထည့်သွင်းမည်</h4>
+        <button type="button" onclick="closeUrlModal()" class="text-slate-400 hover:text-rose-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-rose-900 mb-1">Image URL</label>
+          <input id="modal-photo-url" type="url" placeholder="https://example.com/photo.jpg"
+            class="w-full text-sm px-3.5 py-2 rounded-xl border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-rose-900 mb-1">အမှတ်တရစာသား (Caption)</label>
+          <input id="modal-photo-caption" type="text" placeholder="Our sweet memory..."
+            class="w-full text-sm px-3.5 py-2 rounded-xl border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeUrlModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+          မလုပ်တော့ပါ (Cancel)
+        </button>
+        <button type="button" onclick="confirmAddPhotoUrl()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white">
+          ထည့်သွင်းမည် (Add Photo)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="reset-modal" class="hidden fixed inset-0 z-50 bg-rose-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-rose-100 text-center space-y-4">
+      <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h4 class="font-serif text-lg font-bold text-rose-950">မူလအတိုင်း ပြန်ထားမည်လား?</h4>
+        <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+          သင်ပြင်ဆင်သိမ်းဆည်းထားသော စာသားနှင့် ဓာတ်ပုံများ ပျက်သွားပြီး မူလနမူနာပုံစံသို့ ပြန်ရောက်သွားပါမည်။
+        </p>
+      </div>
+      <div class="flex justify-center gap-2 pt-1">
+        <button type="button" onclick="closeResetModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200">
+          မလုပ်တော့ပါ (Cancel)
+        </button>
+        <button type="button" onclick="confirmResetAll()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white">
+          ပြန်ထားမည် (Reset)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT LOGIC: STATE, PERSISTENCE, COUNTER, IMAGE COMPRESSION      -->
+  <!-- ===================================================================== -->
+  <script>
+    const STORAGE_KEY = 'digital_love_card_v1';
+    let isEditMode = false;
+    let counterInterval = null;
+
+    // Default Romantic State Data
+    const defaultLoveData = {
+      heroBadge: "Forever & Always • အချစ်ခရီးလမ်း",
+      partner1: "Kyaw Swar",
+      partner2: "Su Myat",
+      heroSubtitle: "မင်းနဲ့စတင်ဆုံတွေ့ခဲ့တဲ့နေ့ကစပြီး နေ့ရက်တိုင်းဟာ အလှပဆုံး အမှတ်တရတွေ ဖြစ်လာခဲ့တယ်...",
+      startDate: "2022-11-22T18:30",
+      photoSectionTitle: "အမှတ်တရ ဓာတ်ပုံများ (Our Photo Box)",
+      photos: [
+        {
+          id: "p1",
+          url: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=800&q=80",
+          caption: "ပထမဆုံး အတူလျှောက်လည်ခဲ့တဲ့ ညနေခင်းလေး",
+          date: "Nov 22, 2022"
+        },
+        {
+          id: "p2",
+          url: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80",
+          caption: "မင်းရဲ့ အပြုံးလေးတွေနဲ့ ပြည့်နှက်နေတဲ့ နေ့ရက်",
+          date: "Feb 14, 2024"
+        },
+        {
+          id: "p3",
+          url: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=800&q=80",
+          caption: "အမြဲတမ်း လက်တွဲသွားမယ့် ခရီးစဉ်",
+          date: "Nov 22, 2026"
+        }
+      ],
+      poemStyle: "serif",
+      poemTitle: "“မင်းအတွက် ရေးဖွဲ့သော ကဗျာ”",
+      poemBody: "လမင်းကြီးက ညအမှောင်ကို အလင်းပေးသလို\nမင်းရဲ့အပြုံးလေးက ကိုယ့်ဘဝတစ်ခုလုံးကို လင်းလက်စေခဲ့တယ်...\n\nရာသီတွေ ဘယ်လိုပဲ ပြောင်းလဲသွားပါစေ\nမင်းလက်ကို တွဲထားမယ့် ကိုယ့်ရဲ့အချစ်တွေကတော့\nဘယ်တော့မှ ပြောင်းလဲသွားမှာ မဟုတ်ပါဘူး။",
+      poemAuthor: "မင်းကို အမြဲချစ်နေမယ့် သူ",
+      postcardHeading: "Happy Anniversary, My Love!",
+      postcardMessage: "ချစ်ရပါသော မင်းလေးရေ...\nဒီနေ့ဟာ တို့နှစ်ယောက်အတွက် အရမ်းကို အဓိပ္ပာယ်ရှိတဲ့ နှစ်ပတ်လည်နေ့လေးပါ။ အတူတူဖြတ်သန်းခဲ့တဲ့ ပျော်ရွှင်မှုတွေ၊ ဂရုစိုက်မှုတွေအတွက် ကျေးဇူးအများကြီးတင်ပါတယ်။ နောင်နှစ်ပေါင်းများစွာတိုင်အောင် အတူတူ လက်တွဲသွားကြမယ်နော်။",
+      postcardLocation: "Yangon, Myanmar",
+      postcardDate: "22 NOV 2026",
+      postcardStamp: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=300&q=80",
+      postcardTo: "My Soulmate, Su Myat",
+      postcardFrom: "Yours Forever, Kyaw Swar",
+      postcardTag: "#OurAnniversary • အမြဲတမ်းအတူတူ",
+      videoTitle: "အမှတ်တရ ဗီဒီယိုလေး (Our Special Video)",
+      videoUrl: "https://www.youtube.com/watch?v=2Vv-BfVoq4g",
+      videoNote: "ဒီဗီဒီယိုလေးကို ပြန်ကြည့်တိုင်း မင်းနဲ့အတူရှိခဲ့တဲ့ ပျော်စရာအချိန်လေးတွေကို အမြဲသတိရနေမိတယ်..."
+    };
+
+    let loveData = structuredClone(defaultLoveData);
+
+    // -----------------------------------------------------------------------
+    // 1. INITIALIZATION & STORAGE LOADING
+    // -----------------------------------------------------------------------
+    function loadSavedData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          loveData = { ...structuredClone(defaultLoveData), ...parsed };
+        }
+      } catch (err) {
+        console.error("Failed to load saved love card data:", err);
+      }
+    }
+
+    function renderAll() {
+      // Populate all [data-key] text elements
+      document.querySelectorAll('[data-key]').forEach(el => {
+        const key = el.getAttribute('data-key');
+        if (loveData[key] !== undefined) {
+          el.innerText = loveData[key];
+        }
+      });
+
+      // Start Date Input & Formatted Display
+      const dateInput = document.getElementById('start-date-input');
+      if (dateInput) dateInput.value = loveData.startDate;
+      updateFormattedStartDate();
+
+      // Poem Font Style
+      const poemBody = document.getElementById('poem-body');
+      const poemSelect = document.getElementById('poem-style-select');
+      if (poemSelect) poemSelect.value = loveData.poemStyle || 'serif';
+      if (poemBody) {
+        poemBody.classList.toggle('font-serif', loveData.poemStyle !== 'sans');
+        poemBody.classList.toggle('font-sans', loveData.poemStyle === 'sans');
+      }
+
+      // Postcard Stamp
+      const stampImg = document.getElementById('postcard-stamp-img');
+      if (stampImg && loveData.postcardStamp) {
+        stampImg.src = loveData.postcardStamp;
+      }
+
+      // Render Photo Gallery
+      renderPhotos();
+
+      // Render Video Box
+      const videoInput = document.getElementById('video-url-input');
+      if (videoInput && !loveData.videoUrl.startsWith('blob:')) {
+        videoInput.value = loveData.videoUrl || '';
+      }
+      renderVideoPlayer();
+
+      // Refresh Icons & Editability state
+      applyEditModeState();
+      lucide.createIcons();
+    }
+
+    // -----------------------------------------------------------------------
+    // 2. EDIT MODE / VIEW MODE TOGGLE & SAVE SYSTEM
+    // -----------------------------------------------------------------------
+    function toggleEditMode() {
+      isEditMode = !isEditMode;
+      applyEditModeState();
+      showToast(isEditMode
+        ? "ပြင်ဆင်မှုစနစ် ဖွင့်လိုက်ပါပြီ (Edit Mode Enabled)"
+        : "ကြည့်ရှုမှုစနစ်သို့ ပြောင်းလိုက်ပါပြီ (View Mode)"
+      );
+    }
+
+    function applyEditModeState() {
+      document.body.classList.toggle('edit-mode-active', isEditMode);
+
+      const badge = document.getElementById('mode-status-badge');
+      const btnText = document.getElementById('mode-btn-text');
+      const modeBtn = document.getElementById('toggle-mode-btn');
+
+      if (isEditMode) {
+        badge.innerText = "Edit Mode • ပြင်ဆင်နေသည်";
+        btnText.innerText = "ကြည့်ရှုမည် (Done)";
+        modeBtn.classList.remove('bg-rose-100', 'text-rose-800');
+        modeBtn.classList.add('bg-amber-500', 'text-white', 'border-amber-600');
+      } else {
+        badge.innerText = "View Mode • ကြည့်ရှုနေသည်";
+        btnText.innerText = "ပြင်ဆင်မည် (Edit)";
+        modeBtn.classList.add('bg-rose-100', 'text-rose-800');
+        modeBtn.classList.remove('bg-amber-500', 'text-white', 'border-amber-600');
+      }
+
+      // Toggle contentEditable on all marked elements
+      document.querySelectorAll('[data-editable="true"]').forEach(el => {
+        el.setAttribute('contenteditable', isEditMode ? 'true' : 'false');
+      });
+    }
+
+    function syncEditableTextsToState() {
+      document.querySelectorAll('[data-key]').forEach(el => {
+        const key = el.getAttribute('data-key');
+        if (key) {
+          loveData[key] = el.innerText.trim();
+        }
+      });
+
+      // Sync photo captions & dates
+      document.querySelectorAll('[data-photo-id]').forEach(card => {
+        const id = card.getAttribute('data-photo-id');
+        const photoObj = loveData.photos.find(p => p.id === id);
+        if (photoObj) {
+          const capEl = card.querySelector('.photo-caption');
+          const dateEl = card.querySelector('.photo-date');
+          if (capEl) photoObj.caption = capEl.innerText.trim();
+          if (dateEl) photoObj.date = dateEl.innerText.trim();
+        }
+      });
+    }
+
+    function saveAllData(showNotification = true) {
+      try {
+        syncEditableTextsToState();
+        // Do not persist temporary blob URLs across reloads
+        const dataToSave = structuredClone(loveData);
+        if (dataToSave.videoUrl && dataToSave.videoUrl.startsWith('blob:')) {
+          dataToSave.videoUrl = defaultLoveData.videoUrl;
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        if (showNotification) {
+          showToast("ပြင်ဆင်ထားသမျှကို သိမ်းဆည်းပြီးပါပြီ! (Saved)");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("ပုံဖိုင်အရွယ်အစား ကြီးလွန်းသဖြင့် သိမ်းဆည်းမရပါ။ ပုံအချို့လျှော့ချပေးပါ။");
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 3. LIVE REAL-TIME LOVE COUNTER
+    // -----------------------------------------------------------------------
+    function updateStartDate(newVal) {
+      if (!newVal) return;
+      loveData.startDate = newVal;
+      updateFormattedStartDate();
+      updateCounterTick();
+    }
+
+    function updateFormattedStartDate() {
+      const display = document.getElementById('formatted-start-date');
+      if (!display) return;
+      const d = new Date(loveData.startDate);
+      if (isNaN(d.getTime())) return;
+      display.innerText = d.toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric'
+      }) + ' • ' + d.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function updateCounterTick() {
+      const start = new Date(loveData.startDate);
+      const now = new Date();
+      if (isNaN(start.getTime())) return;
+
+      const diffMs = Math.max(0, now - start);
+      const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      // Accurate Calendar Years, Months, Days calculation
+      let years = now.getFullYear() - start.getFullYear();
+      let months = now.getMonth() - start.getMonth();
+      let days = now.getDate() - start.getDate();
+      let hours = now.getHours() - start.getHours();
+      let minutes = now.getMinutes() - start.getMinutes();
+      let seconds = now.getSeconds() - start.getSeconds();
+
+      if (seconds < 0) { seconds += 60; minutes--; }
+      if (minutes < 0) { minutes += 60; hours--; }
+      if (hours < 0) { hours += 24; days--; }
+      if (days < 0) {
+        const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+        days += prevMonth.getDate();
+        months--;
+      }
+      if (months < 0) { months += 12; years--; }
+      if (years < 0) { years = 0; months = 0; days = 0; }
+
+      document.getElementById('cnt-years').innerText = years;
+      document.getElementById('cnt-months').innerText = months;
+      document.getElementById('cnt-days').innerText = days;
+      document.getElementById('cnt-hours').innerText = String(hours).padStart(2, '0');
+      document.getElementById('cnt-minutes').innerText = String(minutes).padStart(2, '0');
+      document.getElementById('cnt-seconds').innerText = String(seconds).padStart(2, '0');
+      document.getElementById('total-days-badge').innerText = totalDays.toLocaleString();
+    }
+
+    // -----------------------------------------------------------------------
+    // 4. PHOTO BOX GALLERY & IMAGE COMPRESSION
+    // -----------------------------------------------------------------------
+    function renderPhotos() {
+      const grid = document.getElementById('photo-grid');
+      if (!grid) return;
+
+      grid.innerHTML = loveData.photos.map((photo, idx) => `
+        <div data-photo-id="${photo.id}" class="group bg-white p-3.5 pb-5 rounded-2xl border border-rose-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative">
+          
+          <!-- Edit Controls Overlay (Edit Mode Only) -->
+          <div class="edit-only absolute top-5 right-5 z-20 flex items-center gap-1.5">
+            <label class="p-2 rounded-xl bg-white/95 hover:bg-rose-600 text-rose-700 hover:text-white shadow-md cursor-pointer transition" title="Replace Photo">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <input type="file" accept="image/*" class="hidden" onchange="replaceSinglePhoto(event, '${photo.id}')" />
+            </label>
+            <button type="button" onclick="deletePhoto('${photo.id}')"
+              class="p-2 rounded-xl bg-white/95 hover:bg-red-600 text-red-600 hover:text-white shadow-md transition" title="Delete Photo">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Image Frame -->
+          <div class="aspect-[4/3] w-full rounded-xl overflow-hidden bg-rose-50 relative">
+            <img src="${photo.url}"
+              onerror="this.src='https://placehold.co/600x450/ffe4e6/be123c?text=Our+Memory+${idx + 1}'"
+              alt="Love Memory"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          </div>
+
+          <!-- Polaroid Caption & Date -->
+          <div class="mt-3.5 px-1 space-y-1.5">
+            <p data-editable="true" class="photo-caption font-serif text-sm sm:text-base font-semibold text-rose-950 leading-snug">
+              ${escapeHtml(photo.caption)}
+            </p>
+            <div class="flex items-center justify-between text-xs text-rose-500">
+              <span data-editable="true" class="photo-date font-medium">${escapeHtml(photo.date)}</span>
+              <i data-lucide="heart" class="w-3.5 h-3.5 fill-rose-400 text-rose-400"></i>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      applyEditModeState();
+      lucide.createIcons();
+    }
+
+    // Compress uploaded images cleanly so localStorage stays fast and reliable
+    function compressImageFile(file, maxWidth = 900, quality = 0.78) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleNewPhotoUpload(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      syncEditableTextsToState();
+      for (const file of files) {
+        try {
+          const dataUrl = await compressImageFile(file);
+          loveData.photos.push({
+            id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            url: dataUrl,
+            caption: "အမှတ်တရ ပုံရိပ်လေး...",
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      event.target.value = '';
+      renderPhotos();
+      showToast("ဓာတ်ပုံအသစ် ထည့်သွင်းပြီးပါပြီ! Save နှိပ်ရန် မမေ့ပါနှင့်။");
+    }
+
+    async function replaceSinglePhoto(event, photoId) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      syncEditableTextsToState();
+      try {
+        const dataUrl = await compressImageFile(file);
+        const target = loveData.photos.find(p => p.id === photoId);
+        if (target) target.url = dataUrl;
+        renderPhotos();
+        showToast("ဓာတ်ပုံ ပြောင်းလဲပြီးပါပြီ!");
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function deletePhoto(photoId) {
+      syncEditableTextsToState();
+      loveData.photos = loveData.photos.filter(p => p.id !== photoId);
+      renderPhotos();
+      showToast("ဓာတ်ပုံကို ဖယ်ရှားပြီးပါပြီ။");
+    }
+
+    function addPhotoByUrlPrompt() {
+      document.getElementById('modal-photo-url').value = '';
+      document.getElementById('modal-photo-caption').value = '';
+      document.getElementById('url-modal').classList.remove('hidden');
+    }
+
+    function closeUrlModal() {
+      document.getElementById('url-modal').classList.add('hidden');
+    }
+
+    function confirmAddPhotoUrl() {
+      const url = document.getElementById('modal-photo-url').value.trim();
+      const caption = document.getElementById('modal-photo-caption').value.trim() || "Our Sweet Memory";
+      if (!url) return;
+      syncEditableTextsToState();
+      loveData.photos.push({
+        id: 'p_' + Date.now(),
+        url,
+        caption,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      });
+      closeUrlModal();
+      renderPhotos();
+      showToast("ဓာတ်ပုံ ထည့်သွင်းပြီးပါပြီ!");
+    }
+
+    // -----------------------------------------------------------------------
+    // 5. POEM STYLE & POSTCARD STAMP HANDLERS
+    // -----------------------------------------------------------------------
+    function updatePoemStyle(style) {
+      loveData.poemStyle = style;
+      const poemBody = document.getElementById('poem-body');
+      if (poemBody) {
+        poemBody.classList.toggle('font-serif', style !== 'sans');
+        poemBody.classList.toggle('font-sans', style === 'sans');
+      }
+    }
+
+    async function handleStampUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+        const compressed = await compressImageFile(file, 360, 0.8);
+        loveData.postcardStamp = compressed;
+        document.getElementById('postcard-stamp-img').src = compressed;
+        showToast("တံဆိပ်ခေါင်းပုံ ပြောင်းလဲပြီးပါပြီ!");
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 6. VIDEO BOX PLAYER (YouTube, Vimeo, Direct MP4, Local File)
+    // -----------------------------------------------------------------------
+    function parseYouTubeId(url) {
+      const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+      const match = url.match(regExp);
+      return match ? match[1] : null;
+    }
+
+    function parseVimeoId(url) {
+      const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      return match ? match[1] : null;
+    }
+
+    function applyVideoUrl() {
+      const input = document.getElementById('video-url-input');
+      const val = input.value.trim();
+      if (!val) return;
+      loveData.videoUrl = val;
+      renderVideoPlayer();
+      showToast("ဗီဒီယို ပြောင်းလဲပြီးပါပြီ!");
+    }
+
+    function handleLocalVideoSelect(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const blobUrl = URL.createObjectURL(file);
+      loveData.videoUrl = blobUrl;
+      renderVideoPlayer();
+      showToast("ဗီဒီယိုဖိုင် ဖွင့်လှစ်ပြီးပါပြီ!");
+    }
+
+    function renderVideoPlayer() {
+      const container = document.getElementById('video-player-container');
+      if (!container) return;
+      const url = (loveData.videoUrl || '').trim();
+
+      if (!url) {
+        container.innerHTML = `<div class="text-rose-400 text-sm">No video selected</div>`;
+        return;
+      }
+
+      const ytId = parseYouTubeId(url);
+      if (ytId) {
+        container.innerHTML = `
+          <iframe class="w-full h-full"
+            src="https://www.youtube.com/embed/${ytId}?rel=0"
+            title="Love Memory Video"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>`;
+        return;
+      }
+
+      const vimeoId = parseVimeoId(url);
+      if (vimeoId) {
+        container.innerHTML = `
+          <iframe class="w-full h-full"
+            src="https://player.vimeo.com/video/${vimeoId}"
+            frameborder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowfullscreen></iframe>`;
+        return;
+      }
+
+      // Direct MP4 or Blob Video
+      container.innerHTML = `
+        <video class="w-full h-full object-contain bg-black" controls playsinline src="${url}">
+          Your browser does not support the video tag.
+        </video>`;
+    }
+
+    // -----------------------------------------------------------------------
+    // 7. BACKUP EXPORT / IMPORT / RESET & TOAST UTILITIES
+    // -----------------------------------------------------------------------
+    function toggleBackupMenu() {
+      document.getElementById('backup-menu').classList.toggle('hidden');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('backup-menu');
+      if (menu && !menu.contains(e.target) && !e.target.closest('button[onclick="toggleBackupMenu()"]')) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    function exportBackupJSON() {
+      syncEditableTextsToState();
+      const blob = new Blob([JSON.stringify(loveData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `love-card-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toggleBackupMenu();
+      showToast("Backup ဖိုင် ဒေါင်းလုဒ်လုပ်ပြီးပါပြီ!");
+    }
+
+    function importBackupJSON(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          loveData = { ...structuredClone(defaultLoveData), ...imported };
+          saveAllData(false);
+          renderAll();
+          updateCounterTick();
+          toggleBackupMenu();
+          showToast("Backup ဖိုင်မှ ပြန်လည်ထည့်သွင်းပြီးပါပြီ!");
+        } catch (err) {
+          showToast("ဖိုင်ပုံစံ မှားယွင်းနေပါသည်။");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function openResetModal() {
+      document.getElementById('backup-menu').classList.add('hidden');
+      document.getElementById('reset-modal').classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+      document.getElementById('reset-modal').classList.add('hidden');
+    }
+
+    function confirmResetAll() {
+      localStorage.removeItem(STORAGE_KEY);
+      loveData = structuredClone(defaultLoveData);
+      closeResetModal();
+      renderAll();
+      updateCounterTick();
+      showToast("မူလအတိုင်း ပြန်လည်သတ်မှတ်ပြီးပါပြီ!");
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const box = document.getElementById('toast-box');
+      const text = document.getElementById('toast-message');
+      text.innerText = msg;
+      box.classList.remove('opacity-0', 'translate-y-4');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        box.classList.add('opacity-0', 'translate-y-4');
+      }, 3000);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // -----------------------------------------------------------------------
+    // 8. AMBIENT FLOATING PETALS / HEARTS ANIMATION
+    // -----------------------------------------------------------------------
+    function initAmbientPetals() {
+      const canvas = document.getElementById('ambient-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let w = canvas.width = window.innerWidth;
+      let h = canvas.height = window.innerHeight;
+
+      window.addEventListener('resize', () => {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      });
+
+      const particles = Array.from({ length: 24 }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        size: 6 + Math.random() * 8,
+        speedY: 0.4 + Math.random() * 0.7,
+        speedX: (Math.random() - 0.5) * 0.5,
+        opacity: 0.18 + Math.random() * 0.25,
+        angle: Math.random() * Math.PI * 2
+      }));
+
+      function drawHeart(x, y, size, opacity) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = `rgba(244, 63, 94, ${opacity})`;
+        ctx.beginPath();
+        const topCurveHeight = size * 0.3;
+        ctx.moveTo(0, topCurveHeight);
+        ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, topCurveHeight);
+        ctx.bezierCurveTo(-size / 2, (size + topCurveHeight) / 2, 0, (size + topCurveHeight) / 1.4, 0, size);
+        ctx.bezierCurveTo(0, (size + topCurveHeight) / 1.4, size / 2, (size + topCurveHeight) / 2, size / 2, topCurveHeight);
+        ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, topCurveHeight);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function loop() {
+        ctx.clearRect(0, 0, w, h);
+        for (const p of particles) {
+          p.y -= p.speedY;
+          p.x += Math.sin(p.angle) * 0.4 + p.speedX;
+          p.angle += 0.02;
+          if (p.y < -20) {
+            p.y = h + 20;
+            p.x = Math.random() * w;
+          }
+          drawHeart(p.x, p.y, p.size, p.opacity);
+        }
+        requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedData();
+      renderAll();
+      updateCounterTick();
+      counterInterval = setInterval(updateCounterTick, 1000);
+      initAmbientPetals();
+    });
+  </script>
+</body>
+</html>
+```
